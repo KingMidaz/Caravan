@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QMainWindow
 from UI.ui_main import Ui_MainWindow
 from UI.ui_play import Ui_PlayWindow
 from UI.ui_build import Ui_BuildWindow
+
 import cards
 import player
 
