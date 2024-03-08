@@ -1,34 +1,86 @@
+from PySide6.QtCore import QPoint, QRect
+
 import cards
-from dataclasses import dataclass
+import socket
+from dataclasses import dataclass, field
 from enum import Enum
 
 
 @dataclass
 class Player:
     name: str
+    human: bool
+    clientsocket: socket.socket
+    id: int
     deck: cards.Deck
-    drawpile: cards.DrawPile = cards.DrawPile()
-    hand: cards.Hand = cards.Hand()
+    drawpile: cards.DrawPile
+    hand: cards.Hand
+    discardzone: QRect
 
-    freeside: cards.Lane = cards.Lane()
-    goodsprings: cards.Lane = cards.Lane()
-    novac: cards.Lane = cards.Lane()
-    thestrip: cards.Lane = cards.Lane()
+    lanes: dict[str, cards.Lane]
+    goodsprings: cards.Lane
+    novac: cards.Lane
+    thestrip: cards.Lane
+
+    flip: bool = False
 
     def deal(self):
         self.deck.shuffle()
-        for i in range(0, 7):
-            self.hand.add_card(self.deck.draw_card())
+        for i in range(0, 8):
+            self.hand.addCard(self.deck.drawCard())
         self.drawpile.cards = self.deck.cards
+        self.drawpile.flipDraw()
 
     def move(self, card, lane):
-        setattr(self, lane, getattr(self, lane).add_card(self.hand.play_card(card)))
+        setattr(self, lane, getattr(self, lane).add_card(self.hand.playCard(card)))
 
     def check_end(self) -> bool:
         return False
 
-    def __init__(self, deck: cards.Deck):
-        self.deck = deck
-        self.name = "Player"
+    def getHand(self):
+        return self.hand
 
+    def getDrawPile(self):
+        return self.drawpile
+    
+    def flipSides(self):
+        self.flip = not self.flip
+    
+    def draw(self, flip: bool) -> bool:
+        if self.hand.cardCount() < 8:
+            self.hand.addCard(self.drawpile.drawCard())
+            self.hand.flipHand(flip)
+            return True
+        return False
+
+    def detectHit(self, mouse: QPoint) -> cards.Card:
+        if self.drawpile.isMouseOver(mouse):
+            return self.drawpile.getTopCard()
+        
+        card = None
+        for c in self.hand.getCards():
+            if c.isMouseOver(mouse):
+                card = c
+        
+        #for k in self.lanes.keys():
+        #    for c in self.lanes[k].cards:
+        #        if c.isMouseOver(mouse):
+        #            card = c
+
+        return card
+
+    def __init__(self, deck: cards.Deck, name: str, id: int, human: bool):
+        self.name = name
+        self.id = id
+        self.deck = deck
+        self.drawpile = cards.DrawPile()
+        self.hand = cards.Hand()
+        self.human = human
+
+        self.lanes = {"Freeside" : cards.Lane(), "Goodsprings" : cards.Lane(), "The Strip" : cards.Lane()}
+        
+        self.discardzone = QRect()
+        
+        self.clientsocket = None
+        
         self.deal()

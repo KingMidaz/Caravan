@@ -39,10 +39,15 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.playButton, 1, 1, 1, 1)
 
+        self.playAIButton = QPushButton(self.mainmenuWidget)
+        self.playAIButton.setObjectName(u"playAIButton")
+
+        self.gridLayout.addWidget(self.playAIButton, 2, 1, 1, 1)
+
         self.exitButton = QPushButton(self.mainmenuWidget)
         self.exitButton.setObjectName(u"exitButton")
 
-        self.gridLayout.addWidget(self.exitButton, 3, 1, 1, 1)
+        self.gridLayout.addWidget(self.exitButton, 4, 1, 1, 1)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -51,17 +56,18 @@ class Ui_MainWindow(object):
         self.builddeckButton = QPushButton(self.mainmenuWidget)
         self.builddeckButton.setObjectName(u"builddeckButton")
 
-        self.gridLayout.addWidget(self.builddeckButton, 2, 1, 1, 1)
+        self.gridLayout.addWidget(self.builddeckButton, 3, 1, 1, 1)
 
         self.verticalSpacer_2 = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
-        self.gridLayout.addItem(self.verticalSpacer_2, 4, 1, 1, 1)
+        self.gridLayout.addItem(self.verticalSpacer_2, 5, 1, 1, 1)
 
         MainWindow.setCentralWidget(self.mainmenuWidget)
 
         self.retranslateUi(MainWindow)
         self.exitButton.clicked.connect(MainWindow.exit)
         self.playButton.clicked.connect(MainWindow.play_game)
+        self.playAIButton.clicked.connect(MainWindow.play_ai_game)
         self.builddeckButton.clicked.connect(MainWindow.build_deck)
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -70,6 +76,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Caravan", None))
         self.playButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
+        self.playAIButton.setText(QCoreApplication.translate("MainWindow", u"Play (AI)", None))
         self.exitButton.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.builddeckButton.setText(QCoreApplication.translate("MainWindow", u"Build Deck", None))
     # retranslateUi

@@ -28,6 +28,7 @@ class Ui_PlayWindow(object):
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.playspaceWidget = eui.MyOpenGLWidget(self.centralwidget)
         self.playspaceWidget.setObjectName(u"playspaceWidget")
+        self.playspaceWidget.setMouseTracking(True)
 
         self.gridLayout.addWidget(self.playspaceWidget, 0, 0, 1, 1)
 
