@@ -11,16 +11,15 @@ class Player:
     name: str
     human: bool
     clientsocket: socket.socket
+    socketaddress: (str, int)
     id: int
     deck: cards.Deck
     drawpile: cards.DrawPile
     hand: cards.Hand
     discardzone: QRect
+    nturns: int
 
     lanes: dict[str, cards.Lane]
-    goodsprings: cards.Lane
-    novac: cards.Lane
-    thestrip: cards.Lane
 
     flip: bool = False
 
@@ -48,9 +47,11 @@ class Player:
     
     def draw(self, flip: bool) -> bool:
         if self.hand.cardCount() < 8:
-            self.hand.addCard(self.drawpile.drawCard())
-            self.hand.flipHand(flip)
-            return True
+            cardtodraw = self.drawpile.drawCard()
+            if cardtodraw is not None:
+                self.hand.addCard(cardtodraw)
+                self.hand.flipHand(flip)
+                return True
         return False
 
     def detectHit(self, mouse: QPoint) -> cards.Card:
@@ -61,11 +62,6 @@ class Player:
         for c in self.hand.getCards():
             if c.isMouseOver(mouse):
                 card = c
-        
-        #for k in self.lanes.keys():
-        #    for c in self.lanes[k].cards:
-        #        if c.isMouseOver(mouse):
-        #            card = c
 
         return card
 
@@ -76,11 +72,13 @@ class Player:
         self.drawpile = cards.DrawPile()
         self.hand = cards.Hand()
         self.human = human
+        self.nturns = 0
 
         self.lanes = {"Freeside" : cards.Lane(), "Goodsprings" : cards.Lane(), "The Strip" : cards.Lane()}
         
         self.discardzone = QRect()
         
         self.clientsocket = None
+        self.socketaddress = (0, 0)
         
         self.deal()

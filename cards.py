@@ -1,3 +1,5 @@
+import math
+
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtWidgets import QMainWindow
 
@@ -6,11 +8,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import total_ordering
 
+
 class Suit(Enum):
     SPADE = 1
     CLUB = 2
     HEART = 3
     DIAMOND = 4
+
 
 @total_ordering
 class CardNum(Enum):
@@ -65,6 +69,7 @@ class Lane:
     cards: list[Card] = field(default_factory=list)
     topleft: QPoint = QPoint(0, 0)
     score: int = 0
+    discarded: Card = None
 
     def resetLane(self) -> bool:
         if len(self.cards) > 0:
@@ -74,6 +79,8 @@ class Lane:
         return False
 
     def addCard(self, card: Card):
+        self.discarded = None
+
         if len(self.cards) >= 1:
             if card.num < CardNum.JACK:
                 if self.getLastNumCard().num is not None and self.getLastNumCard().num > card.num:
@@ -82,32 +89,36 @@ class Lane:
                     self.direction = Direction.ASCENDING
 
         if card.num == CardNum.QUEEN:
-            if self.direction == Direction.ASCENDING: self.direction = Direction.DESCENDING
-            else: self.direction = Direction.ASCENDING
+            self.suit = card.suit
+            if self.direction == Direction.ASCENDING:
+                self.direction = Direction.DESCENDING
+            else:
+                self.direction = Direction.ASCENDING
         elif card.num == CardNum.JACK:
             if self.getLastCard().num >= CardNum.JACK:
                 self.discardLast()
             self.discardLast()
             self.scoreLane()
             return self
+        card.flipped = False
         self.cards.append(card)
         self.scoreLane()
         return self
-    
+
     def discardLast(self):
-        self.cards.pop()
+        self.discarded = self.cards.pop()
 
         if len(self.cards) >= 1:
             if self.cards[len(self.cards) - 2].num > self.cards[len(self.cards) - 1].num:
                 self.direction = Direction.DESCENDING
             else:
                 self.direction = Direction.ASCENDING
-    
+
     def getLastCard(self) -> Card:
         if len(self.cards) == 0:
             return None
         return self.cards[len(self.cards) - 1]
-    
+
     def getLastNumCard(self) -> Card:
         for i in range(len(self.cards) - 1, -1, -1):
             if self.cards[i].num < CardNum.JACK:
@@ -128,7 +139,8 @@ class Lane:
         elif len(self.cards) > 0 and card.num >= CardNum.JACK:
             self.addCard(card)
             return True
-        elif (self.direction == Direction.ASCENDING and card.num > self.getLastCard().num) or (self.direction == Direction.DESCENDING and card.num < self.getLastCard().num):
+        elif (self.direction == Direction.ASCENDING and card.num > self.getLastNumCard().num) or (
+                self.direction == Direction.DESCENDING and card.num < self.getLastNumCard().num):
             self.addCard(card)
             return True
         return False
@@ -140,9 +152,13 @@ class Lane:
                 if self.cards[i].num < CardNum.JACK:
                     self.score += self.cards[i].num.value
                 elif self.cards[i].num == CardNum.KING:
-                    self.score += self.cards[i-1].num.value
-                    
+                    j = 0
+                    while self.cards[i - j - 1].num == CardNum.KING:
+                        j += 1
+                    self.score += self.cards[i - j - 1].num.value * (2**j)
+
         return self.score
+
 
 @dataclass
 class DrawPile:
@@ -152,9 +168,11 @@ class DrawPile:
     height: int = 180
 
     def drawCard(self) -> Card:
-        c = self.cards.pop(0)
-        return c
-    
+        if len(self.cards) > 0:
+            return self.cards.pop(0)
+        else:
+            return None
+
     def getTopCard(self) -> Card:
         return self.cards[len(self.cards) - 1]
 
@@ -162,10 +180,11 @@ class DrawPile:
         if coord.x() > self.topleft.x() and coord.x() < self.topleft.x() + self.width and coord.y() > self.topleft.y() and coord.y() < self.topleft.y() + self.height:
             return True
         return False
-    
+
     def flipDraw(self):
         for c in self.cards:
             c.flipped = True
+
 
 @dataclass
 class Hand:
@@ -179,15 +198,20 @@ class Hand:
     def reindex(self):
         for i in range(0, len(self.cards)):
             self.cards[i].idx = i
-            self.cards[i].topleft = QPoint(self.topleft.x() + i*self.cards[i].width/2, self.topleft.y()-2*(i%2))
+            self.cards[i].topleft = QPoint(self.topleft.x() + i * self.cards[i].width / 2,
+                                           self.topleft.y() - 2 * (i % 2))
 
     def flipHand(self, flip: bool):
         for c in self.cards:
             c.flipped = flip
 
     def discard(self, idx):
-        self.cards.pop(idx)
-        self.reindex()
+        if len(self.cards) <= idx:
+            return False
+        if self.cards.pop(idx) is not None:
+            self.reindex()
+            return True
+        return False
 
     def playCard(self, idx) -> Card:
         crd = self.cards.pop(idx)
@@ -200,6 +224,7 @@ class Hand:
     def cardCount(self) -> int:
         return len(self.cards)
 
+
 @dataclass
 class Deck:
     cards: list[Card] = list[Card]
@@ -211,4 +236,8 @@ class Deck:
         random.shuffle(self.cards)
 
     def drawCard(self) -> Card:
-        return self.cards.pop(0)
+        if len(self.cards) > 0:
+            return self.cards.pop(0)
+        else:
+            return None
+
